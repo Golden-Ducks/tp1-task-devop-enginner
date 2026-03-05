@@ -1,0 +1,140 @@
+
+
+import csv
+import string
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.metrics import accuracy_score
+
+
+
+texts = []
+labels = []
+
+
+with open("Fake.csv", encoding="utf8") as file:
+    reader = csv.DictReader(file)
+
+    for row in reader:
+        texts.append(row["text"])
+        labels.append("FAKE")
+
+
+with open("True.csv", encoding="utf8") as file:
+    reader = csv.DictReader(file)
+
+    for row in reader:
+        texts.append(row["text"])
+        labels.append("REAL")
+
+print("Documents:", len(texts))
+
+
+
+def clean_text(text):
+
+    text = text.lower()
+
+    for p in string.punctuation:
+        text = text.replace(p, "")
+
+    return text
+
+
+
+def tokenize(text):
+
+    words = text.split()
+
+    tokens = []
+
+    for w in words:
+        if len(w) > 2:     
+            tokens.append(w)
+
+    return tokens
+
+
+
+
+processed_docs = []
+
+for text in texts:
+
+    clean = clean_text(text)
+
+    tokens = tokenize(clean)
+
+    processed_docs.append(tokens)
+
+
+
+
+vocab_dict = {}
+
+index = 0
+
+for doc in processed_docs:
+
+    for word in doc:
+
+        if word not in vocab_dict:
+
+            vocab_dict[word] = index
+            index += 1
+
+
+print("Vocabulary size:", len(vocab_dict))
+
+
+
+def vectorize(doc, vocab_dict):
+
+    vector = [0] * len(vocab_dict)
+
+    for word in doc:
+
+        if word in vocab_dict:
+
+            position = vocab_dict[word]
+
+            vector[position] = 1
+
+    return vector
+
+
+vectors = []
+
+for doc in processed_docs:
+
+    v = vectorize(doc, vocab_dict)
+
+    vectors.append(v)
+
+
+
+
+X_train, X_test, y_train, y_test = train_test_split(
+    vectors,
+    labels,
+    test_size=0.2,
+    random_state=42
+)
+
+
+
+
+model = BernoulliNB()
+
+model.fit(X_train, y_train)
+
+
+
+
+pred = model.predict(X_test)
+
+
+
+acc = accuracy_score(y_test, pred)
+
+print("Accuracy:", acc)
